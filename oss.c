@@ -17,13 +17,16 @@
 #include <getopt.h>
 #include "config.h"
 #include "page_table.h"
+#include "logger.h"
+#include "utils.h"
+#include "clock.h"
 
 #define PERMS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
 // variables
 extern PageTable *page_table;
+extern char *logfile; // oss.log
 int shmid;
-char *logfile = NULL; // oss.log
 
 // functions
 void generate_report();
@@ -34,12 +37,12 @@ int detachandremove(int shmid, void *shmaddr);
 static void myhandler(int signum) {
   // is ctrl-c interrupt
   if(signum == SIGINT)
-    perror("\noss: Ctrl-C Interrupt Detected. Shutting down gracefully...\n");
+    perror("\noss: Ctrl-C Interrupt Detected. Shutting down gracefully...");
   // is timer interrupt
   else if(signum == SIGALRM)
-    perror("\noss: Info: The time for this program has expired. Shutting down gracefully...\n");
+    perror("\noss: Info: The time for this program has expired. Shutting down gracefully...");
   else {
-    perror("\noss: Warning: Only Ctrl-C and Timer signal interrupts are being handled.\n");
+    perror("\noss: Warning: Only Ctrl-C and Timer signal interrupts are being handled.");
     return; // ignore the interrupt, do not exit
   }
 
@@ -51,7 +54,7 @@ static void myhandler(int signum) {
   
   pid_t group_id = getpgrp();
   if(group_id < 0)
-    perror("oss: Info: group id not found\n");
+    perror("oss: Info: group id not found");
   else
     killpg(group_id, signum);
 
@@ -91,6 +94,7 @@ int main(int argc, char*argv[]) {
   int option;
   int n_programs = -1;
   int nextFork;
+  char *logfileName = NULL;
 
   // parse CLI arguments
   // - run oss with at least '-p' for number of processes. default to 20
@@ -115,7 +119,7 @@ int main(int argc, char*argv[]) {
         }
         break;
       case 'l':
-        logfile = optarg;
+        logfileName = optarg;
         break;
       default:
         printf("default option reached\n");
@@ -128,8 +132,8 @@ int main(int argc, char*argv[]) {
     n_programs = NUMBER_PROCESSES;
   }
 
-  if(logfile == NULL) {
-    logfile = "oss.log";
+  if(logfileName == NULL) {
+    logfileName = "oss.log";
   }
 
   printf("N programs: %d\n", n_programs);
@@ -137,26 +141,22 @@ int main(int argc, char*argv[]) {
 
   // Setup Timers and Interrupts
   if (setupinterrupt() == -1) {
-    perror("oss: Error: Could not run setup the interrupt handler.\n");
+    perror("oss: Error: Could not run setup the interrupt handler.");
     return -1;
   }
   if (setupitimer(MAX_SECONDS) == -1) {
-    perror("oss: Error: Could not setup the interval timer.\n");
+    perror("oss: Error: Could not setup the interval timer.");
     return -1;
   }
 
   // Setup intterupt handler
   signal(SIGINT, myhandler);
 
-  // setup logfile
-  // Test that logfile can be used
-  FILE *fp = fopen(logfile, "w");
-  if(fp == NULL) {
-    perror("oss: Error: Could not open log file for writing");
+  // init logfile
+  if(init_logfile(logfileName) == -1) {
+    perror("oss: Error: Could not init logfile");
     return 1;
   }
-  fprintf(fp, "Log Info for OSS Program:\n"); // clear the logfile to start
-  fclose(fp);
 
   // seed the random
   srand(time(NULL));
@@ -165,7 +165,7 @@ int main(int argc, char*argv[]) {
   // allocate shared memory
   shmid = shmget(IPC_PRIVATE, sizeof(PageTable), PERMS | 0666);
   if (shmid == -1) {
-    perror("oss: Error: Failed to create shared memory segment for page table\n");
+    perror("oss: Error: Failed to create shared memory segment for page table");
     return -1;
   }
   
@@ -180,6 +180,9 @@ int main(int argc, char*argv[]) {
 
   // init page table
   init_page_table();
+
+  // init clock
+  init_clock();
 
 
 
