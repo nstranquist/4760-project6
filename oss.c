@@ -28,6 +28,8 @@ char *logfile = NULL; // oss.log
 // functions
 void generate_report();
 void cleanup();
+int detachandremove(int shmid, void *shmaddr);
+
 
 static void myhandler(int signum) {
   // is ctrl-c interrupt
@@ -161,11 +163,25 @@ int main(int argc, char*argv[]) {
 
 
   // allocate shared memory
-  // shmid = shmget(IPC_PRIVATE, sizeof(PageTable), PERMS | 0666);
-  // if (shmid == -1) {
-  //   perror("oss: Error: Failed to create shared memory segment for page table\n");
-  //   return -1;
-  // }
+  shmid = shmget(IPC_PRIVATE, sizeof(PageTable), PERMS | 0666);
+  if (shmid == -1) {
+    perror("oss: Error: Failed to create shared memory segment for page table\n");
+    return -1;
+  }
+  
+  // attach shared memory
+  page_table = (PageTable *)shmat(shmid, NULL, 0);
+  if (page_table == (void *) -1) {
+    perror("oss: Error: Failed to attach page table to shared memory");
+    if (shmctl(shmid, IPC_RMID, NULL) == -1)
+      perror("oss: Error: Failed to remove memory segment containing page table");
+    return -1;
+  }
+
+  // init page table
+  init_page_table();
+
+
 
 
   generate_report();
@@ -181,4 +197,32 @@ void generate_report() {
 
 void cleanup() {
   printf("cleaning up...\n");
+
+  // remove shared memory
+  if(detachandremove(shmid, page_table) == -1) {
+    perror("oss: Error: Failure to detach and remove memory for page table");
+  }
+  else printf("success detatch\n");
+}
+
+// From textbook
+int detachandremove(int shmid, void *shmaddr) {
+  int error = 0;
+
+  if (shmdt(shmaddr) == -1) {
+    fprintf(stderr, "oss: Error: Can't detach memory\n");
+    error = errno;
+  }
+  
+  if ((shmctl(shmid, IPC_RMID, NULL) == -1) && !error) {
+    fprintf(stderr, "oss: Error: Can't remove shared memory\n");
+    error = errno;
+  }
+
+  if (!error)
+    return 0;
+
+  errno = error;
+
+  return -1;
 }
