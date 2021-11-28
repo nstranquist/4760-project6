@@ -28,11 +28,14 @@ extern PageTable *page_table;
 extern char *logfile; // oss.log
 int shmid;
 
+Clock next_fork;
+Clock time_diff;
+
+
 // functions
 void generate_report();
 void cleanup();
 int detachandremove(int shmid, void *shmaddr);
-
 
 static void myhandler(int signum) {
   // is ctrl-c interrupt
@@ -94,6 +97,8 @@ int main(int argc, char*argv[]) {
   int option;
   int n_programs = -1;
   int nextFork;
+  int process_count = 0;
+  int total_processes_count = 0;
   char *logfileName = NULL;
 
   // parse CLI arguments
@@ -185,6 +190,89 @@ int main(int argc, char*argv[]) {
   init_clock();
 
 
+  // generate next time // as cs
+  // wait_sem(semid, semwait, 1);
+  next_fork = generate_next_child_fork();
+  // signal_sem(semid, semsignal, 1);
+
+  // Main Logic loop
+  while(total_processes_count < MAX_TOTAL_PROCESSES_MOCK) {
+    fprintf(stderr, "\nIn loop! %d total processes, %d running\n", total_processes_count, process_count);
+
+    // manage / evaluate clock
+    if(wait_time_is_up(next_fork) == -1) {
+      fprintf(stderr, "oss is waiting to generate fork new child process\n");
+      increment_clock_round();
+
+      continue;
+    }
+
+    // before forking, check if current active processes < 18
+    // IF >= 18, report this, increment the clock, and continue the loop
+    if(process_count >= MAX_RUNNING_PROCESSES) {
+      printf("oss: Warning: Max active processes reached. Skipping this round\n");
+
+      increment_clock_round();
+      continue;
+    }
+    if(total_processes_count > MAX_TOTAL_PROCESSES_MOCK) {
+      printf("oss: Warning: Max total processes reached. Skipping this round\n");
+      continue;
+    }
+
+    printf("It is time to fork a child!\n");
+
+    // increase total processes before child fork
+    process_count++;
+    total_processes_count++;
+
+    // fork, excl, etc.
+    pid_t child_pid = fork();
+
+    if (child_pid == -1) {
+      perror("oss: Error: Failed to fork a child process");
+      cleanup();
+      return -1;
+    }
+
+    if (child_pid == 0) {
+      printf("will execute child\n");
+
+      // execl: NOTE: CAN PASS THE NS AND MS HERE
+      execl("./user", "./user", (char *) NULL); // 1 arg: pass shmid
+      perror("oss: Error: Child failed to execl");
+      cleanup();
+      exit(0);
+    }
+    else {
+      // parent waits inside loop for child to finish
+      int status;
+      pid_t wpid = waitpid(child_pid, &status, WNOHANG);
+
+      if (wpid == -1) {
+        perror("oss: Error: Failed to wait for child");
+        cleanup();
+        return 1;
+      }
+      else if(wpid == 0) {
+        fprintf(stderr, "child is still running\n");
+
+      }
+      else {
+        fprintf(stderr, "A child has finished\n");
+
+        process_count--; // when the process as finished
+      }
+    }
+
+    time_diff = increment_clock_round();
+    sleep(1); // to debug
+  }
+
+  // wait for all children to finish
+  while(wait(NULL) > 0) {
+    printf("oss: Info: Waiting for all children to finish...\n");
+  }
 
 
   generate_report();

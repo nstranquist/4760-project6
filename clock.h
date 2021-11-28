@@ -12,8 +12,10 @@ typedef struct {
 } Clock;
 
 void init_clock();
+Clock generate_next_child_fork();
 Clock increment_clock_round();
 Clock add_time_to_clock(int sec, int ns);
+int wait_time_is_up(Clock next_fork);
 
 
 #endif

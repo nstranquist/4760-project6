@@ -10,7 +10,8 @@ Running the Project:
 2. Run "make" to compile the code
 3. Execute "./oss" with the following parameters:
   - `-p n` to specify 'n' number of processes to be used. The default is 20.
-  ...
+  - `-l s` to specify 's' as the filename to use for the logging. The default is "oss.log"
+  - `-h` to receive a help message from the program. This will also terminate the program.
 
 
 Project Description:

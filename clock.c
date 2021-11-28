@@ -51,3 +51,36 @@ Clock add_time_to_clock(int sec, int ns) {
 
   return time_diff;
 }
+
+int wait_time_is_up(Clock next_fork) {
+  // implement as critical section
+  // compare next_sec and next_ns with what's in the process table
+  if(next_fork.sec < os_clock.sec) {
+    return 0;
+  }
+  if(next_fork.sec == os_clock.sec) {
+    if(next_fork.ns < os_clock.ns) {
+      return 0;
+    }
+  }
+
+  return -1; // -1 means not
+}
+
+Clock generate_next_child_fork() {
+  Clock next_fork;
+  int random_ms = getRandom(500) + 1; // 1-500 milliseconds
+  int ns = random_ms * MS_NS_CONVERSION;
+  // set next__fork to current clock
+  next_fork.sec = os_clock.sec;
+  next_fork.ns = os_clock.ns;
+  if((next_fork.ns + ns) > NANOSECONDS) {
+    int remainder_ns = next_fork.ns + ns;
+    next_fork.sec++;
+    next_fork.ns = remainder_ns;
+  }
+  else
+    next_fork.ns = next_fork.ns + ns;
+
+  return next_fork;
+}
