@@ -7,9 +7,9 @@
 typedef struct {
   int hello;
   int world;
-} page_table;
+} PageTable;
 
 // functions
-void init_table();
+void init_page_table();
 
 #endif

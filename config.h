@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define NUMBER_PROCESSES 20
+
 #define MAX_SECONDS 50 // 5
 
 #define NANOSECONDS 1000000000

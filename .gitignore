@@ -1,3 +1,6 @@
 *.o
 user
 oss
+.vscode/
+oss.log
+*.log
