@@ -8,11 +8,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/msg.h>
 #include <sys/ipc.h>
 #include "config.h"
 #include "utils.h"
 #include "page_table.h"
 #include "clock.h"
+#include "msgqueue.h"
 
 extern PageTable *page_table;
 int shmid;
@@ -41,6 +43,10 @@ int main(int argc, char*argv[]) {
       perror("oss: user: Error: Failed to remove memory segment");
     return 0;
   }
+
+  
+  // ... start logic
+
 
   
   // sleep(1);

@@ -10,9 +10,11 @@
 Clock os_clock;
 
 
-void init_clock() {
+Clock init_clock() {
   os_clock.sec = 0;
   os_clock.ns = 0;
+
+  return os_clock;
 }
 
 Clock increment_clock_round() {

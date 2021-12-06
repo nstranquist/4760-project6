@@ -8,6 +8,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <sys/shm.h>
+#include <sys/msg.h>
 #include <sys/ipc.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -20,6 +21,7 @@
 #include "logger.h"
 #include "utils.h"
 #include "clock.h"
+#include "msgqueue.h"
 
 #define PERMS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
@@ -183,11 +185,20 @@ int main(int argc, char*argv[]) {
     return -1;
   }
 
+  // Initialize Message Queue
+  int queueid = initqueue(IPC_PRIVATE);
+  if(queueid == -1) {
+    perror("oss: Error: Failed to initialize message queue\n");
+    cleanup();
+    return -1;
+  }
+  page_table->queueid = queueid;
+
   // init page table
   init_page_table();
 
   // init clock
-  init_clock();
+  page_table->clock = init_clock();
 
 
   // generate next time // as cs
@@ -292,7 +303,13 @@ void generate_report() {
 }
 
 void cleanup() {
-  printf("cleaning up...\n");
+  fprintf(stderr, "oss: cleaning up shared memory and shared system data structures...\n");
+
+  // remove msgqueue
+  if(remmsgqueue(page_table->queueid) == -1) {
+    perror("oss: Error: Failed to remove message queue");
+  }
+  else printf("success remove msgqueue\n");
 
   // remove shared memory
   if(detachandremove(shmid, page_table) == -1) {

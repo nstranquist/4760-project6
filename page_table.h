@@ -2,11 +2,14 @@
 #define PAGE_TABLE_H
 
 #include "config.h"
+#include "clock.h"
 
 // data structures
 typedef struct {
-  int hello;
-  int world;
+  int queueid;
+  Clock clock;
+
+  int pages[32];
 } PageTable;
 
 // functions
