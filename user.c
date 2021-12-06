@@ -17,6 +17,10 @@
 #include "clock.h"
 #include "msgqueue.h"
 
+#define PERCENT_READS_WRITES 20
+
+#define PROBABILITY_INVALID_REQUEST 5 // small chance
+
 extern PageTable *page_table;
 int shmid;
 
@@ -45,9 +49,29 @@ int main(int argc, char*argv[]) {
     return 0;
   }
 
+  // Notes
+  // - the percentage of reads vs writes should be configurable
   
-  // ... start logic
+  // Start Logic
 
+  // 1. Generate random actual byte address
+    // --> from 0 to the limit of process memory (256k?)
+
+
+  // 2. The user process will wait on its semaphore (or message queue) that will be signaled by oss
+    // --> oss checks the page reference by extracting the page number from the address,
+    // --> increments the clock as specified above,
+    // --> and sends a signal on the semaphore if the page is valid.
+
+  // 3. Processes should have a small probability to request an invalid memory request. In this case 
+    // --> the process should simply make a request for some memory that is outside of its legal page table.
+    // --> oss should detect this and deal with it by terminating the process.
+    // --> This should be indicated in the log.
+
+  // 4. At random times the user process will check whether it should terminate.
+    // --> say every 1000 ± 100 memory references
+    // --> If so, all its memory should be returned to oss
+    // --> oss should be informed of its termination.
 
   
   // sleep(1);

@@ -99,6 +99,12 @@ static int timerHandler(int s) {
   errno = errsave;
 }
 
+// The statistics of interest are:
+// • Number of memory accesses per second
+// • Number of page faults per memory access
+// • Average memory access speed
+// • Number of seg faults per memory access
+
 int main(int argc, char*argv[]) {
   printf("Hello project 6!\n");
 
@@ -217,6 +223,9 @@ int main(int argc, char*argv[]) {
     return 1;
   }
 
+  // Start program timer
+  alarm(MAX_SECONDS);
+  
 
   // init page table
   init_page_table();
@@ -233,8 +242,11 @@ int main(int argc, char*argv[]) {
   // Check that there's never more than n_programs processes in the system at once
   // --> Use semaphore.
 
+  // oss should also print its memory map every logical second showing the allocation of frames.
+  // --> You can display unallocated frames by a period (·) and allocated frame by a +.
+
   // Main Logic loop
-  while(total_processes_count < MAX_TOTAL_PROCESSES_MOCK) {
+  while(total_processes_count < MAX_TOTAL_PROCESSES_MOCK) { // MAX_TOTAL_PROCESSES
     fprintf(stderr, "\nIn loop! %d total processes, %d running\n", total_processes_count, process_count);
 
     // manage / evaluate clock
@@ -304,6 +316,9 @@ int main(int argc, char*argv[]) {
       else {
         fprintf(stderr, "A child has finished\n");
 
+        // When a process terminates, oss should log its termination in the log file and also indicate its effective memory access time.
+
+
         process_count--; // when the process as finished
       }
     }
@@ -372,3 +387,9 @@ int detachandremove(int shmid, void *shmaddr) {
 
   return -1;
 }
+
+
+// NEED FOR MESSAGE HANDLER:
+// For each message type, a certain "handler" function is setup to receive and handle the message appropriately
+// May have several different message types, and they should all be documented.
+// Could attach pid of process wanting message, and check if matches, and if doesn't match, then ignore, put msg back in queue, and read next
