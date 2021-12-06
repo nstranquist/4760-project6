@@ -9,8 +9,10 @@
 #include <sys/wait.h>
 #include <sys/shm.h>
 #include <sys/msg.h>
+#include <sys/sem.h>
 #include <sys/ipc.h>
 #include <sys/stat.h>
+#include <semaphore.h>
 #include <math.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -22,6 +24,7 @@
 #include "utils.h"
 #include "clock.h"
 #include "msgqueue.h"
+#include "semaphore_manager.h"
 
 #define PERMS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
@@ -29,6 +32,9 @@
 extern PageTable *page_table;
 extern char *logfile; // oss.log
 int shmid;
+int semid;
+struct sembuf semsignal[1];
+struct sembuf semwait[1];
 
 Clock next_fork;
 Clock time_diff;
@@ -194,6 +200,24 @@ int main(int argc, char*argv[]) {
   }
   page_table->queueid = queueid;
 
+  // Create semaphore containing a single element
+  if((semid = semget(IPC_PRIVATE, 1, PERMS)) == -1) {
+    perror("oss: Error: Failed to create private semaphore\n");
+    return 1;
+  }
+
+  setsembuf(semwait, 0, -1, 0); // decrement first element of semwait
+  setsembuf(semsignal, 0, 1, 0); // increment first element of semsignal
+
+  // initialize semaphore before use
+  if(initelement(semid, 0, 1) == -1) {
+    perror("oss: Error: Failed to init semaphore element value to 1\n");
+    if(removesem(semid) == -1)
+      perror("oss: Error: Failed to remove failed semaphore\n");
+    return 1;
+  }
+
+
   // init page table
   init_page_table();
 
@@ -205,6 +229,9 @@ int main(int argc, char*argv[]) {
   // wait_sem(semid, semwait, 1);
   next_fork = generate_next_child_fork();
   // signal_sem(semid, semsignal, 1);
+
+  // Check that there's never more than n_programs processes in the system at once
+  // --> Use semaphore.
 
   // Main Logic loop
   while(total_processes_count < MAX_TOTAL_PROCESSES_MOCK) {
@@ -310,6 +337,12 @@ void cleanup() {
     perror("oss: Error: Failed to remove message queue");
   }
   else printf("success remove msgqueue\n");
+
+  // remove semaphore
+  if(removesem(semid) == -1) {
+    perror("runsim: Error: Failed to remove semaphore");
+  }
+  else printf("sucess remove sem\n");
 
   // remove shared memory
   if(detachandremove(shmid, page_table) == -1) {

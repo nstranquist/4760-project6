@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include <sys/msg.h>
 #include <sys/ipc.h>
 #include "config.h"
