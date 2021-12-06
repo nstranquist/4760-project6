@@ -41,9 +41,10 @@ Clock time_diff;
 
 
 // functions
-void generate_report();
 void cleanup();
 int detachandremove(int shmid, void *shmaddr);
+void print_memory_layout();
+// void generate_report();
 
 static void myhandler(int signum) {
   // is ctrl-c interrupt
@@ -59,7 +60,7 @@ static void myhandler(int signum) {
 
   fprintf(stderr, "interrupt handler\n");
 
-  generate_report();
+  // generate_report();
 
   cleanup();
   
@@ -114,6 +115,8 @@ int main(int argc, char*argv[]) {
   int process_count = 0;
   int total_processes_count = 0;
   char *logfileName = NULL;
+  int current_sec = 0; // to detect every 1 logical sec to print out the current memory layout
+
 
   // parse CLI arguments
   // - run oss with at least '-p' for number of processes. default to 20
@@ -253,6 +256,11 @@ int main(int argc, char*argv[]) {
     if(wait_time_is_up(next_fork) == -1) {
       fprintf(stderr, "oss is waiting to generate fork new child process\n");
       increment_clock_round();
+      if(page_table->clock.sec > current_sec) {
+        printf("logical second increase detected!\n");
+        print_memory_layout();
+        current_sec = page_table->clock.sec;
+      }
 
       continue;
     }
@@ -263,6 +271,11 @@ int main(int argc, char*argv[]) {
       printf("oss: Warning: Max active processes reached. Skipping this round\n");
 
       increment_clock_round();
+      if(page_table->clock.sec > current_sec) {
+        printf("logical second increase detected!\n");
+        print_memory_layout();
+        current_sec = page_table->clock.sec;
+      }
       continue;
     }
     if(total_processes_count > MAX_TOTAL_PROCESSES_MOCK) {
@@ -324,6 +337,12 @@ int main(int argc, char*argv[]) {
     }
 
     time_diff = increment_clock_round();
+    if(page_table->clock.sec > current_sec) {
+      printf("logical second increase detected!\n");
+      print_memory_layout();
+      current_sec = page_table->clock.sec;
+    }
+
     sleep(1); // to debug
   }
 
@@ -332,17 +351,16 @@ int main(int argc, char*argv[]) {
     printf("oss: Info: Waiting for all children to finish...\n");
   }
 
-
-  generate_report();
+  // generate_report();
 
   cleanup();
 
   return 0;
 }
 
-void generate_report() {
-  printf("generating report...\n");
-}
+// void generate_report() {
+//   printf("generating report...\n");
+// }
 
 void cleanup() {
   fprintf(stderr, "oss: cleaning up shared memory and shared system data structures...\n");
@@ -388,6 +406,31 @@ int detachandremove(int shmid, void *shmaddr) {
   return -1;
 }
 
+void print_memory_layout() {
+  // "current memory layout at time xxx:xxxx is:"
+  // - Occupied, RefByte, DirtyBit
+  // - Frame 0, Frame 1, Frame 2, Frame...
+
+  // field values:
+  // - "no/yes"
+  // - 0-256
+  // - 0-1
+
+  // print current memory layout
+  printf("Current memory layout at time %d:%d is:\n", page_table->clock.sec, page_table->clock.ns);
+  printf("-\t\tOccupied\tRefByte\tDirtyBit\n");
+
+  for(int i = 0; i < page_table->frame_size; i++) {
+    char *occupied;
+    if(find_in_bitvector(page_table->pages[i].reference_byte) == 0) {
+      occupied = "yes";
+    }
+    else {
+      occupied = "no";
+    }
+    printf("Frame %d:\t\t%s\t%d\t%d\n", i, occupied, page_table->pages[i].reference_byte, page_table->pages[i].dirty_bit);
+  }
+}
 
 // NEED FOR MESSAGE HANDLER:
 // For each message type, a certain "handler" function is setup to receive and handle the message appropriately

@@ -15,4 +15,6 @@ Running the Project:
 
 
 Project Description:
-todo...
+This program simulates the operating system, ingoring all parts except the memory management portion.
+The primary data structure in this program is the "Page Table", which manages the frames and pages of the memory in the OS.
+It helps to manage the simulated page faults in the user processes

@@ -56,6 +56,7 @@ int main(int argc, char*argv[]) {
 
   // 1. Generate random actual byte address
     // --> from 0 to the limit of process memory (256k?)
+  
 
 
   // 2. The user process will wait on its semaphore (or message queue) that will be signaled by oss

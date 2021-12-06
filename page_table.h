@@ -30,7 +30,13 @@
 
 // data structures
 typedef struct {
-  int reference_bits; // init to 0
+  // TODO: use struct for managing...
+  // - get RefByte
+  // - get DirtyBit
+  int reference_byte; // 0-255, init to 0
+  int dirty_bit; // 0 or 1
+
+  // int occupied;
 } Frame;
 
 typedef struct {
@@ -38,15 +44,23 @@ typedef struct {
   Clock clock;
 
   int size; // so each process does not access memory beyond the page table limit
+  int frame_size;
 
   Frame pages[32];
 
-  int unallocated_frames[256]; // bitvector
+  int frames[256]; // bitvector
 } PageTable;
+
 
 // functions
 void init_page_table();
+Frame init_frame();
 
 // bit vector functions
+void init_frames_bitvector();
+int find_in_bitvector(int byte);
+int remove_from_bitvector(int byte);
+int add_to_bitvector(int byte);
+int get_next_frame();
 
 #endif
