@@ -238,8 +238,13 @@ int main(int argc, char*argv[]) {
     if (child_pid == 0) {
       printf("will execute child\n");
 
+      // parse shmid
+      int shmid_length = snprintf( NULL, 0, "%d", shmid );
+      char* shmid_str = malloc( shmid_length + 1 );
+      snprintf( shmid_str, shmid_length + 1, "%d", shmid );
+
       // execl: NOTE: CAN PASS THE NS AND MS HERE
-      execl("./user", "./user", (char *) NULL); // 1 arg: pass shmid
+      execl("./user", "./user", shmid_str, (char *) NULL); // 1 arg: pass shmid
       perror("oss: Error: Child failed to execl");
       cleanup();
       exit(0);

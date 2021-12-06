@@ -25,6 +25,13 @@ int main(int argc, char*argv[]) {
 
   // parse cli args from 'execl'
   // - shmid
+  printf("arg1: %s\n", argv[1]);
+
+  shmid = atoi(argv[1]);
+  if(!shmid) {
+    printf("error: user: Invalid shmid\n");
+    exit(1);
+  }
 
   // attach shared memory
   page_table = (PageTable *)shmat(shmid, NULL, 0);
@@ -36,7 +43,7 @@ int main(int argc, char*argv[]) {
   }
 
   
-  sleep(1);
+  // sleep(1);
 
   printf("Exiting user...\n");
 
