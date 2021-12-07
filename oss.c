@@ -325,6 +325,43 @@ int main(int argc, char*argv[]) {
       else if(wpid == 0) {
         fprintf(stderr, "child is still running\n");
 
+        mymsg_t mymsg;
+
+        // msgtype 1 gets message requests from child
+
+        // setup to receive messages from child
+        if(msgrcv(page_table->queueid, &mymsg, MAX_MSG_SIZE, 1, 0) == -1) {
+          perror("oss: Error: Failed to receive message from child");
+          return 1;
+        }
+
+        fprintf(stderr, "rcv mesg from child: %s\n", mymsg.mtext);
+
+        // parse message
+        // char* msg_str = mymsg.mtext;
+        // char* msg_type = strtok(msg_str, "-");
+        // char* msg_ns = strtok(NULL, "-");
+        // char* msg_ms = strtok(NULL, "-");
+
+        // convert to int
+        // int msg_type = atoi(msg_type);
+
+        // check if message is valid
+
+
+        // if valid, approve request, update values, and send message back to user either way
+        int is_valid = 1;
+        char *buf_res;
+        int msg_type = 2;
+
+        asprintf(&buf_res, "%d-%d", msg_type, is_valid);
+
+        if(msgwrite(buf_res, MAX_MSG_SIZE, msg_type, page_table->queueid) == -1) {
+          perror("oss: Error: Could not write message back to child");
+          return 1;
+        }
+
+        fprintf(stderr, "sent msg back to user\n");
       }
       else {
         fprintf(stderr, "A child has finished\n");
@@ -415,10 +452,17 @@ void print_memory_layout() {
   // - "no/yes"
   // - 0-256
   // - 0-1
+  
+  // also log to file
+  // Test that logfile can be used
+  FILE *fp = fopen("oss.log", "w");
+  if(fp == NULL) {
+    return;
+  }
 
   // print current memory layout
-  printf("Current memory layout at time %d:%d is:\n", page_table->clock.sec, page_table->clock.ns);
-  printf("-\t\tOccupied\tRefByte\tDirtyBit\n");
+  fprintf(fp, "Current memory layout at time %d:%d is:\n", page_table->clock.sec, page_table->clock.ns);
+  fprintf(fp, "-\t\tOccupied\tRefByte\tDirtyBit\n");
 
   for(int i = 0; i < page_table->frame_size; i++) {
     char *occupied;
@@ -428,8 +472,10 @@ void print_memory_layout() {
     else {
       occupied = "no";
     }
-    printf("Frame %d:\t\t%s\t%d\t%d\n", i, occupied, page_table->pages[i].reference_byte, page_table->pages[i].dirty_bit);
+    fprintf(fp, "Frame %d:\t\t%s\t%d\t%d\n", i, occupied, page_table->pages[i].reference_byte, page_table->pages[i].dirty_bit);
   }
+
+  fclose(fp);
 }
 
 // NEED FOR MESSAGE HANDLER:

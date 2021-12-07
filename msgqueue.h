@@ -7,6 +7,9 @@ typedef struct mymsg_t {
   // message defaults
   long mtype;
   char mtext[MAX_MSG_SIZE];
+
+  // add types:
+  // char pid;
 } mymsg_t;
 
 
