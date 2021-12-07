@@ -352,7 +352,7 @@ int main(int argc, char*argv[]) {
         // if valid, approve request, update values, and send message back to user either way
         int is_valid = 1;
         char *buf_res;
-        int msg_type = 2;
+        int msg_type = 1; // 2
 
         asprintf(&buf_res, "%d-%d", msg_type, is_valid);
 
@@ -380,7 +380,7 @@ int main(int argc, char*argv[]) {
       current_sec = page_table->clock.sec;
     }
 
-    sleep(1); // to debug
+    // sleep(1); // to debug
   }
 
   // wait for all children to finish
@@ -455,7 +455,7 @@ void print_memory_layout() {
   
   // also log to file
   // Test that logfile can be used
-  FILE *fp = fopen("oss.log", "w");
+  FILE *fp = fopen("oss.log", "a+");
   if(fp == NULL) {
     return;
   }
